@@ -75,11 +75,12 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLMENT YOUR actFun HERE
-        if type is 'ReLU':
-            return np.max(0,z)
-        elif type is 'Tanh':
+        if type is 'relu':
+            tmp = [ np.max([0,z1]) for z1 in z.flatten().tolist()]
+            return np.array(tmp).reshape(z.shape)
+        elif type is 'tanh':
             return np.tanh(z)
-        elif type is 'Sigmoid':
+        elif type is 'sigmoid':
             return 1/(1+np.exp(-z))
         else:
             print 'Wrong type!'
@@ -95,12 +96,12 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLEMENT YOUR diff_actFun HERE
-        if type is 'ReLU':
+        if type is 'relu':
             return np.heaviside(z,1.0)
-        elif type is 'Sigmoid':
+        elif type is 'sigmoid':
             tmp = 1/(1+np.exp(-z))
             return tmp*(1-tmp)
-        elif type is 'Tanh':
+        elif type is 'tanh':
             return 4/(np.exp(z)+np.exp(-z))**2
         else:
             print 'Wrong activation function type!'
@@ -118,9 +119,9 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR feedforward HERE
 
-        self.z1 = np.dot(self.W1,X) + self.b1
+        self.z1 = np.dot(X,self.W1) + self.b1
         self.a1 = self.actFun(self.z1,type=self.actFun_type)
-        self.z2 = np.dot(self.W2,self.a1) + self.b2
+        self.z2 = np.dot(self.a1,self.W2) + self.b2
         exp_scores = np.exp(self.z2)
         self.probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return None
@@ -138,10 +139,11 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR CALCULATION OF THE LOSS HERE
 
-        data_loss = - np.sum(y * self.probs[:,1] + (1 - y) * self.probs[:,0])/num_examples
+        data_loss = - np.sum(y *np.log(self.probs[:,1]) + (1 - y) * np.log(self.probs[:,0]))/num_examples
 
         # Add regulatization term to loss (optional)
-        data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
+        data_loss += self.reg_lambda / (  2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2))) * num_examples)
+        
         return (1. / num_examples) * data_loss
 
     def predict(self, X):
@@ -165,10 +167,11 @@ class NeuralNetwork(object):
         num_examples = len(X)
         delta3 = self.probs
         delta3[range(num_examples), y] -= 1
-        # dW2 = dL/dW2
-        # db2 = dL/db2
-        # dW1 = dL/dW1
-        # db1 = dL/db1
+        delta2 = np.dot(delta3,self.W2.T) * self.diff_actFun(self.z1,type=self.actFun_type)
+        dW2 = np.dot(self.a1.T,delta3)/num_examples
+        db2 = np.mean(delta3,axis=0)
+        dW1 = np.dot(X.T,delta2)/num_examples
+        db1 = np.mean(delta2,axis=0)
         return dW1, dW2, db1, db2
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
