@@ -75,8 +75,16 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLMENT YOUR actFun HERE
-
-        return None
+        if type is 'ReLU':
+            return np.max(0,z)
+        elif type is 'Tanh':
+            return np.tanh(z)
+        elif type is 'Sigmoid':
+            return 1/(1+np.exp(-z))
+        else:
+            print 'Wrong type!'
+            return None
+        
 
     def diff_actFun(self, z, type):
         '''
@@ -87,8 +95,17 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLEMENT YOUR diff_actFun HERE
+        if type is 'ReLU':
+            return np.heaviside(z,1.0)
+        elif type is 'Sigmoid':
+            tmp = 1/(1+np.exp(-z))
+            return tmp*(1-tmp)
+        elif type is 'Tanh':
+            return 4/(np.exp(z)+np.exp(-z))**2
+        else:
+            print 'Wrong activation function type!'
+            return None
 
-        return None
 
     def feedforward(self, X, actFun):
         '''
@@ -101,9 +118,9 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR feedforward HERE
 
-        # self.z1 =
-        # self.a1 =
-        # self.z2 =
+        self.z1 = np.dot(self.W1,X) + self.b1
+        self.a1 = self.actFun(self.z1,type=self.actFun_type)
+        self.z2 = np.dot(self.W2,self.a1) + self.b2
         exp_scores = np.exp(self.z2)
         self.probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return None
@@ -121,7 +138,7 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR CALCULATION OF THE LOSS HERE
 
-        # data_loss =
+        data_loss = - np.sum(y * self.probs[:,1] + (1 - y) * self.probs[:,0])/num_examples
 
         # Add regulatization term to loss (optional)
         data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
@@ -195,14 +212,14 @@ class NeuralNetwork(object):
         plot_decision_boundary(lambda x: self.predict(x), X, y)
 
 def main():
-    # # generate and visualize Make-Moons dataset
-    # X, y = generate_data()
-    # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
-    # plt.show()
+     # generate and visualize Make-Moons dataset
+     X, y = generate_data()
+     plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
+     plt.show()
 
-    # model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
-    # model.fit_model(X,y)
-    # model.visualize_decision_boundary(X,y)
+     model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
+     model.fit_model(X,y)
+     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
     main()
